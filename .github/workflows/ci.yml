@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "3.1.x"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Unit tests
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+      - name: Security tests
+        run: dotnet test --no-build --configuration Release --filter "FullyQualifiedName~SecurityTests" --verbosity normal
+
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "3.1.x"
+
+      - name: Setup Java (for JMeter)
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Install JMeter
+        run: |
+          JMETER_VERSION="5.6.3"
+          wget -q "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz" -O jmeter.tgz
+          tar -xzf jmeter.tgz
+          echo "JMETER_HOME=$PWD/apache-jmeter-${JMETER_VERSION}" >> $GITHUB_ENV
+          echo "$PWD/apache-jmeter-${JMETER_VERSION}/bin" >> $GITHUB_PATH
+
+      - name: Restore and build API
+        run: dotnet restore && dotnet build DotNetDemoApi/DotNetDemoApi.csproj --configuration Release --no-restore
+
+      - name: Start API
+        run: |
+          dotnet run --project DotNetDemoApi/DotNetDemoApi.csproj --configuration Release --no-build --urls "http://localhost:5000" &
+          sleep 8
+          curl -sf http://localhost:5000/api/demo/ping || exit 1
+
+      - name: Run JMeter performance test
+        run: |
+          jmeter -n -t jmeter/DotNetDemoApi-Performance.jmx -l jmeter/results.jtl -e -o jmeter/report
+          echo "Performance test completed. Summary:"
+          [ -f jmeter/results.jtl ] && wc -l jmeter/results.jtl
+
+      - name: Upload JMeter report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jmeter-report
+          path: jmeter/report/
+          retention-days: 7

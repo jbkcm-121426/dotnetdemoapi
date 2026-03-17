@@ -72,6 +72,17 @@ dotnet format
 To enforce zero analyzer warnings in CI, set in `Directory.Build.props`:  
 `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`.
 
+## CI (GitHub Actions)
+
+On every push and pull request to `main`/`master`, the [CI workflow](.github/workflows/ci.yml) runs:
+
+1. **Build** – `dotnet build` (Release)
+2. **Unit tests** – `dotnet test` (all tests)
+3. **Security tests** – `dotnet test` filtered to `SecurityTests`
+4. **Performance test** – starts the API, runs JMeter non-GUI, uploads the HTML report as an artifact (`jmeter-report`)
+
+The performance job runs only after build-and-test succeeds. Download the **jmeter-report** artifact from the Actions run to view the report.
+
 ## Solution layout
 
 - **DotNetDemoApi** – Web API project (includes security headers middleware)  
