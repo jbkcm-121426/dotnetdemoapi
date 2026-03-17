@@ -53,7 +53,7 @@ jobs:
       - name: Install JMeter
         run: |
           JMETER_VERSION="5.6.3"
-          wget -q "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz" -O jmeter.tgz
+          wget -q -L "https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz" -O jmeter.tgz || wget -q -L "https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz" -O jmeter.tgz
           tar -xzf jmeter.tgz
           echo "JMETER_HOME=$PWD/apache-jmeter-${JMETER_VERSION}" >> $GITHUB_ENV
           echo "$PWD/apache-jmeter-${JMETER_VERSION}/bin" >> $GITHUB_PATH
@@ -64,18 +64,20 @@ jobs:
       - name: Start API
         run: |
           dotnet run --project DotNetDemoApi/DotNetDemoApi.csproj --configuration Release --no-build --urls "http://localhost:5000" &
-          sleep 8
-          curl -sf http://localhost:5000/api/demo/ping || exit 1
+          for i in $(seq 1 30); do curl -sf http://localhost:5000/api/demo/ping && break; sleep 1; done
+          curl -sf http://localhost:5000/api/demo/ping || (echo "API failed to start"; exit 1)
 
       - name: Run JMeter performance test
         run: |
-          jmeter -n -t jmeter/DotNetDemoApi-Performance.jmx -l jmeter/results.jtl -e -o jmeter/report
+          mkdir -p jmeter/report
+          $JMETER_HOME/bin/jmeter -n -t jmeter/DotNetDemoApi-Performance.jmx -l jmeter/results.jtl -e -o jmeter/report
           echo "Performance test completed. Summary:"
           [ -f jmeter/results.jtl ] && wc -l jmeter/results.jtl
 
       - name: Upload JMeter report
         uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: jmeter-report
           path: jmeter/report/
