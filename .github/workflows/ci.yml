@@ -26,10 +26,10 @@ jobs:
         run: dotnet build --no-restore --configuration Release
 
       - name: Unit tests
-        run: dotnet test --no-build --configuration Release --verbosity normal
+        run: dotnet test --no-build --configuration Release --logger "console;verbosity=detailed" -- RunConfiguration.CollectSourceInformation=false
 
       - name: Security tests
-        run: dotnet test --no-build --configuration Release --filter "FullyQualifiedName~SecurityTests" --verbosity normal
+        run: dotnet test --no-build --configuration Release --filter "FullyQualifiedName~SecurityTests" --logger "console;verbosity=detailed" -- RunConfiguration.CollectSourceInformation=false
 
   performance-test:
     runs-on: ubuntu-latest

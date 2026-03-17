@@ -12,11 +12,11 @@ namespace DotNetDemoApi.Tests
     /// <summary>
     /// Security-focused tests: response headers, input validation, and safe handling of malicious-looking input.
     /// </summary>
-    public class SecurityTests : IClassFixture<WebApplicationFactory<Startup>>
+    public class SecurityTests : IClassFixture<CustomWebApplicationFactory>
     {
         private readonly HttpClient _client;
 
-        public SecurityTests(WebApplicationFactory<Startup> factory)
+        public SecurityTests(CustomWebApplicationFactory factory)
         {
             _client = factory.CreateClient();
         }
