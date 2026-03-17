@@ -1,6 +1,6 @@
 # DotNetDemo – .NET Core 3.1 Web API
 
-.NET Core 3.1 Web API with demo endpoints, a **Products** API (in-memory DB), unit tests, and JMeter performance tests.
+.NET Core 3.1 Web API with demo endpoints, a **Products** API (in-memory DB), unit tests, JMeter performance tests, and GitHub Actions CI.
 
 ## API endpoints
 
